@@ -29,7 +29,7 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true })
         console.error(err);
     });
 
-findById
+//findById
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true })
     .then(() => {
         const id = '000000000000000000000004'
