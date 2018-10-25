@@ -10,16 +10,15 @@
 	"scripts": {
 		"start": "node server.js",
 		"test": "cross-env NODE_ENV=test mocha",
-		"dev": "nodemon server.js",
 		"seed": "node ./utils/seed-database.js"
 	},
 	"dependencies": {
 		"express": "^4.16.3",
-		"mongoose": "^5.0.17",
+		"mongoose": "^5.2.8",
 		"morgan": "^1.9.0"
 	},
 	"devDependencies": {
-		"chai": "^4.2.0",
+		"chai": "^4.1.2",
 		"chai-http": "^4.2.0",
 		"cross-env": "^5.2.0",
 		"mocha": "^5.2.0"
