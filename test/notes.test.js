@@ -261,7 +261,7 @@ describe('Noteful API - Notes', function () {
           expect(res.body.title).to.equal(data.title);
           expect(res.body.content).to.equal(data.content);
           expect(res.body.folderId).to.equal(JSON.parse(JSON.stringify(data.folderId)));
-          expect(new Date(res.body.createdAt)).to.eql(data.createdAt); 
+          expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
           expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
         });
     });
@@ -350,28 +350,83 @@ describe('Noteful API - Notes', function () {
         });
     });
 
-  });
-
-  describe('DELETE /api/notes/:id', function () {
-
-    it('should delete an existing document and respond with 204', function () {
-      let data;
+    it('should return an error if folder id is invalid', function () {
+      const updateItem = {
+        'title': 'The best article about cats ever!',
+        'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor...',
+        'folderId': 'INVALID'
+      }
+      let res;
       return Note.findOne()
-        .then(_data => {
-          data = _data;
-          return chai.request(app).delete(`/api/notes/${data.id}`);
+        .then(_res => {
+          res = _res
+          return chai.request(app)
+            .put(`/api/notes/${res.id}`)
+            .send(updateItem);
         })
-        .then(function (res) {
-          expect(res).to.have.status(204);
-          return Note.countDocuments({ _id: data.id });
+        .then(function (_res) {
+          res = _res;
+          expect(res).to.have.status(400)
+
+        });
+
+    });
+
+    it('should update the note with folderId when provided', function () {
+      const updateItem = {
+        'title': 'What about dogs?!',
+        'content': 'woof woof',
+        'folderId' : '111111111111111111111102'
+      };
+      let res, orig;
+      return Note.findOne()
+        .then(_orig => {
+          orig = _orig;
+          return chai.request(app)
+            .put(`/api/notes/${orig.id}`)
+            .send(updateItem);
         })
-        .then(count => {
-          expect(count).to.equal(0);
+        .then(function (_res) {
+          res = _res;
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
+          return Note.findById(res.body.id);
+        })
+        .then(data => {
+          expect(res.body.title).to.equal(data.title);
+          expect(res.body.content).to.equal(data.content);
+          expect(res.body.folderId).to.equal(JSON.parse(JSON.stringify(data.folderId)));
+          expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
+          expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
+          // expect note to have been updated
+          expect(new Date(res.body.updatedAt)).to.greaterThan(orig.updatedAt);
         });
     });
 
   });
 
-});
+    describe('DELETE /api/notes/:id', function () {
+
+      it('should delete an existing document and respond with 204', function () {
+        let data;
+        return Note.findOne()
+          .then(_data => {
+            data = _data;
+            return chai.request(app).delete(`/api/notes/${data.id}`);
+          })
+          .then(function (res) {
+            expect(res).to.have.status(204);
+            return Note.countDocuments({ _id: data.id });
+          })
+          .then(count => {
+            expect(count).to.equal(0);
+          });
+      });
+
+    });
+
+  });
 
 
