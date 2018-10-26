@@ -23,11 +23,11 @@ describe('Folders', function () {
     });
 
     beforeEach(function () {
-         return Promise.all([Folder.insertMany(folders), Note.insertMany(notes)]) 
-            
+        return Promise.all([Folder.insertMany(folders), Note.insertMany(notes)])
 
 
-     });
+
+    });
 
     afterEach(function () {
         return mongoose.connection.db.dropDatabase();
@@ -156,10 +156,7 @@ describe('Folders', function () {
                     expect(res.body.message).to.equal('Missing `name` in request body');
                 });
         });
-
-        
     });
-        
 
     describe('PUT /api/folders/:id', function () {
 
@@ -262,17 +259,17 @@ describe('Folders', function () {
         it('should delete notes within deleted Folder', function () {
             let data;
             Folder.findOne()
-            .then(_data => {
-                data = _data;
-                return chai.request(app).delete(`/api/folders/${data.id}`);
-            })
-            .then(function (res) {
-                expect(res).to.have.status(204);
-                return Note.countDocuments({folderId: `${data.id}`});
-            })
-            .then(count => {
-                expect(count).to.equal(0);
-            });
+                .then(_data => {
+                    data = _data;
+                    return chai.request(app).delete(`/api/folders/${data.id}`);
+                })
+                .then(function (res) {
+                    expect(res).to.have.status(204);
+                    return Note.countDocuments({ folderId: `${data.id}` });
+                })
+                .then(count => {
+                    expect(count).to.equal(0);
+                });
         });
 
     });

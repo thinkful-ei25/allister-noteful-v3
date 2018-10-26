@@ -8,8 +8,9 @@ const app = require('../server');
 const { TEST_MONGODB_URI } = require('../config');
 
 const Note = require('../models/note');
+const Folder = require('../models/folder')
 
-const { notes } = require('../db/seed/data');
+const { notes, folders } = require('../db/seed/data');
 
 const expect = chai.expect;
 chai.use(chaiHttp);
@@ -22,7 +23,7 @@ describe('Noteful API - Notes', function () {
   });
 
   beforeEach(function () {
-    return Note.insertMany(notes);
+    return Promise.all([Note.insertMany(notes), Folder.insertMany(folders)])
   });
 
   afterEach(function () {
@@ -107,6 +108,27 @@ describe('Noteful API - Notes', function () {
       });
       const apiPromise = chai.request(app).get(`/api/notes?searchTerm=${searchTerm}`);
       return Promise.all([dbPromise, apiPromise])
+        .then(([data, res]) => {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('array');
+          expect(res.body).to.have.length(data.length);
+        });
+    });
+
+
+    it('should return an error if folder id is invalid', function () {
+      return chai.request(app).get('/api/notes?folderId=INVALID')
+        .then(res => {
+          expect(res).to.have.status(400)
+        })
+    })
+
+    it('should return the correct number of notes within a folder', function () {
+      return Promise.all([
+        Note.find({ folderId: '111111111111111111111100' }),
+        chai.request(app).get('/api/notes?folderId=111111111111111111111100')
+      ])
         .then(([data, res]) => {
           expect(res).to.have.status(200);
           expect(res).to.be.json;
@@ -202,6 +224,48 @@ describe('Noteful API - Notes', function () {
         });
     });
 
+    it('should return an error if folder id is invalid', function () {
+      const newItem = {
+        'title': 'The best article about cats ever!',
+        'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor...',
+        'folderId': 'INVALID'
+      };
+      return chai.request(app).post('/api/notes')
+        .send(newItem)
+        .then(res => {
+          expect(res).to.have.status(400)
+        })
+    })
+
+    it('should return a new item with folderId when given', function () {
+      const newItem = {
+        'title': 'TEST ITEM',
+        'content': 'TEST CONTENT',
+        'folderId': '111111111111111111111100'
+      };
+      let res;
+      return chai.request(app)
+        .post('/api/notes')
+        .send(newItem)
+        .then(function (_res) {
+          res = _res;
+          expect(res).to.have.status(201);
+          expect(res).to.have.header('location');
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
+          return Note.findById(res.body.id);
+        })
+        .then(data => {
+          expect(res.body.id).to.equal(data.id);
+          expect(res.body.title).to.equal(data.title);
+          expect(res.body.content).to.equal(data.content);
+          expect(res.body.folderId).to.equal(JSON.parse(JSON.stringify(data.folderId)));
+          expect(new Date(res.body.createdAt)).to.eql(data.createdAt); 
+          expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
+        });
+    });
+
   });
 
   describe('PUT /api/notes/:id', function () {
@@ -227,7 +291,7 @@ describe('Noteful API - Notes', function () {
           expect(res.body).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
           return Note.findById(res.body.id);
         })
-        .then( data => {
+        .then(data => {
           expect(res.body.title).to.equal(data.title);
           expect(res.body.content).to.equal(data.content);
           expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
