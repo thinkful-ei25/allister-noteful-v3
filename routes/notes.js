@@ -4,13 +4,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const Note = require('../models/note');
+const Tag = require('../models/tag')
 
 const router = express.Router();
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
-  const { searchTerm, folderId } = req.query;
-  
+  const { searchTerm, folderId, tagId } = req.query;
+
 
 
 
@@ -33,8 +34,17 @@ router.get('/', (req, res, next) => {
     filter.folderId = folderId
   }
 
+  if (tagId) {
+    if (!mongoose.Types.ObjectId.isValid(tagId)) {
+      const err = new Error('The `tag id` is not valid');
+      err.status = 400;
+      return next(err);
+    }
+    filter.tags = tagId
+  }
   Note.find(filter)
     .sort({ updatedAt: 'desc' })
+    .populate('tags')
     .then(results => {
       res.json(results);
     })
@@ -54,6 +64,7 @@ router.get('/:id', (req, res, next) => {
   }
 
   Note.findById(id)
+    .populate('tags')
     .then(result => {
       if (result) {
         res.json(result);
@@ -68,7 +79,7 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
-  const { title, content, folderId } = req.body;
+  const { title, content, folderId, tags } = req.body;
   let newNote;
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -89,6 +100,31 @@ router.post('/', (req, res, next) => {
   }
 
 
+  if (tags) {
+    newNote.tags = []
+    tags.forEach(tag => {
+      if (!mongoose.Types.ObjectId.isValid(tag)) {
+        const err = new Error('The `id` is not valid');
+        err.status = 400;
+        return next(err);
+      } else {
+        newNote.tags.push(tag)
+      }
+    });
+  }
+
+
+
+  // Tag.find(tag)
+  //   .then(result => {
+  //     if (result) {
+  //       return;
+  //     } else {
+  //       const err = new Error(`Tag id ${tag} not found`);
+  //       err.status = 400;
+  //       return next(err)
+  //     }
+  //   })
 
   Note.create(newNote)
     .then(result => {
@@ -99,7 +135,9 @@ router.post('/', (req, res, next) => {
     .catch(err => {
       next(err);
     });
+
 });
+
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/:id', (req, res, next) => {
