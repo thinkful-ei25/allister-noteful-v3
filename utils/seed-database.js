@@ -5,8 +5,9 @@ const mongoose = require('mongoose');
 const { MONGODB_URI } = require('../config');
 const Note = require('../models/note');
 const Folder = require('../models/folder');
+const Tag = require('../models/tag')
 
-const { notes, folders } = require('../db/seed/data');
+const { notes, folders, tags } = require('../db/seed/data');
 
 console.info('Connecting to:', MONGODB_URI);
 mongoose.connect(MONGODB_URI, { useNewUrlParser:true })
@@ -19,7 +20,9 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser:true })
     return Promise.all([
       Note.insertMany(notes),
       Folder.insertMany(folders),
-      Folder.createIndexes()
+      Tag.insertMany(tags),
+      Folder.createIndexes(),
+      Tag.createIndexes()
     ])
   })
   .then(() => {

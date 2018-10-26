@@ -271,6 +271,15 @@ describe('Folders', function () {
                     expect(count).to.equal(0);
                 });
         });
+        it('should respond with status 400 and an error message when `id` is not valid', function () {
+            
+            return chai.request(app)
+                .delete('/api/folders/NOT-A-VALID-ID')
+                .then(res => {
+                    expect(res).to.have.status(400);
+                    expect(res.body.message).to.eq('The `id` is not valid');
+                });
+        });
 
     });
 
